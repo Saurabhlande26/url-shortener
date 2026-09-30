@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-
+const authRoutes = require("./routes/auth.routes")
 const AppDataSource = require("./config/database");
 const redisClient = require("./config/redis");
 
@@ -27,6 +27,7 @@ app.get("/health", async (req, res) => {
 
 app.use("/api/urls", urlRoutes);
 app.use("/", redirectRoutes);
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;
 
