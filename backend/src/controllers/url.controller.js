@@ -1,5 +1,7 @@
 const {
     createShortUrl,
+    getUserUrls,
+    deleteUserUrl,
 } = require("../services/url.service");
 
 async function createUrl(req, res) {
@@ -12,7 +14,7 @@ async function createUrl(req, res) {
         const url = await createShortUrl({
             originalUrl,
             customAlias,
-            userId: req.user?.id || null,
+            userId: req.user.id,
         });
 
         return res.status(201).json({
@@ -23,6 +25,8 @@ async function createUrl(req, res) {
                 shortCode: url.shortCode,
                 shortUrl: `http://localhost:5000/${url.shortCode}`,
                 originalUrl: url.originalUrl,
+                clickCount: url.clickCount,
+                createdAt: url.createdAt,
             },
         });
     } catch (error) {
@@ -33,6 +37,54 @@ async function createUrl(req, res) {
     }
 }
 
+async function getUrls(req, res) {
+    try {
+        const urls = await getUserUrls(req.user.id);
+
+        return res.status(200).json({
+            success: true,
+            data: urls.map((url) => ({
+                id: url.id,
+                shortCode: url.shortCode,
+                shortUrl: `http://localhost:5000/${url.shortCode}`,
+                originalUrl: url.originalUrl,
+                clickCount: Number(url.clickCount),
+                expiresAt: url.expiresAt,
+                isActive: url.isActive,
+                createdAt: url.createdAt,
+            })),
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+}
+
+async function deleteUrl(req, res) {
+    try {
+        await deleteUserUrl(
+            req.params.id,
+            req.user.id
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "URL deleted successfully",
+        });
+    } catch (error) {
+        return res.status(
+            error.statusCode || 500
+        ).json({
+            success: false,
+            message: error.message,
+        });
+    }
+}
+
 module.exports = {
     createUrl,
+    getUrls,
+    deleteUrl,
 };
