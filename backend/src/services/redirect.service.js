@@ -8,49 +8,53 @@ const {
 const urlRepository = AppDataSource.getRepository("Url");
 
 async function getOriginalUrl(shortCode) {
-
-    // 1. Check Redis
-    const cachedUrl = await getCachedUrl(shortCode);
-
-    if (cachedUrl) {
+    // 1. Redis
+    let url = await getCachedUrl(shortCode);
+    if (url) {
         console.log("Redis CACHE HIT:", shortCode);
+    }
 
-        const url = await urlRepository.findOne({
+    // 2. PostgreSQL if Redis MISS
+    if (!url) {
+        console.log("Redis CACHE MISS:", shortCode);
+
+        const dbUrl = await urlRepository.findOne({
             where: {
                 shortCode,
+                isActive: true,
+            },
+            relations: {
+                user: true,
             },
         });
 
-        if (url) {
-            await urlRepository.increment(
-                {
-                    id: url.id,
-                },
-                "clickCount",
-                1
-            );
+        if (!dbUrl) {
+            const error = new Error("Short URL not found");
+            error.statusCode = 404;
+            throw error;
         }
 
-        return cachedUrl;
+        url = {
+            id: dbUrl.id,
+            shortCode: dbUrl.shortCode,
+            originalUrl: dbUrl.originalUrl,
+            userId: dbUrl.user?.id || null,
+            isActive: dbUrl.isActive,
+            expiresAt: dbUrl.expiresAt,
+        };
+
+        // Cache complete metadata
+        await cacheUrl(shortCode, dbUrl);
     }
 
-    console.log("Redis CACHE MISS:", shortCode);
-
-    // 2. Redis miss → PostgreSQL
-    const url = await urlRepository.findOne({
-        where: {
-            shortCode,
-            isActive: true,
-        },
-    });
-
-    if (!url) {
-        const error = new Error("Short URL not found");
-        error.statusCode = 404;
+    // 3. Check active
+    if (!url.isActive) {
+        const error = new Error("Short URL is disabled");
+        error.statusCode = 410;
         throw error;
     }
 
-    // 3. Check expiration
+    // 4. Check expiration
     if (
         url.expiresAt &&
         new Date(url.expiresAt) <= new Date()
@@ -60,22 +64,7 @@ async function getOriginalUrl(shortCode) {
         throw error;
     }
 
-    // 4. Store URL in Redis
-    await cacheUrl(
-        shortCode,
-        url.originalUrl
-    );
-
-    // 5. Increment click count
-    await urlRepository.increment(
-        {
-            id: url.id,
-        },
-        "clickCount",
-        1
-    );
-
-    return url.originalUrl;
+    return url;
 }
 
 module.exports = {

@@ -2,17 +2,37 @@ const {
     getOriginalUrl,
 } = require("../services/redirect.service");
 
+const {
+    recordClick,
+} = require("../services/click.service");
+
 async function redirectToOriginalUrl(req, res) {
     try {
         const { shortCode } = req.params;
 
-        const originalUrl = await getOriginalUrl(shortCode);
+        const url = await getOriginalUrl(shortCode);
 
-        return res.redirect(302, originalUrl);
+        // Record analytics
+        await recordClick({
+            urlId: url.id,
+            ipAddress: req.ip,
+            userAgent: req.get("user-agent"),
+            referer: req.get("referer"),
+        });
+
+        return res.redirect(
+            302,
+            url.originalUrl
+        );
+
     } catch (error) {
-        return res.status(error.statusCode || 500).json({
+        return res.status(
+            error.statusCode || 500
+        ).json({
             success: false,
-            message: error.message || "Something went wrong",
+            message:
+                error.message ||
+                "Something went wrong",
         });
     }
 }

@@ -1,24 +1,27 @@
 const { DataSource } = require("typeorm");
-require("dotenv").config();
+
+const User = require("../entities/User");
+const Url = require("../entities/Url");
+const Click = require("../entities/Click");
 
 const AppDataSource = new DataSource({
     type: "postgres",
 
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
-
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
 
+    entities: [
+        User,
+        Url,
+        Click,
+    ],
+
     synchronize: true,
 
     logging: false,
-
-    entities: [
-        require("../entities/User"),
-        require("../entities/Url"),
-    ],
 });
 
 module.exports = AppDataSource;
