@@ -7,7 +7,8 @@ const redisClient = require("./config/redis");
 
 const urlRoutes = require("./routes/url.routes");
 const redirectRoutes = require("./routes/redirect.routes");
-
+const analyticsRoutes =
+    require("./routes/analytics.routes");
 const app = express();
 
 app.use(cors());
@@ -28,7 +29,10 @@ app.get("/health", async (req, res) => {
 app.use("/api/urls", urlRoutes);
 app.use("/", redirectRoutes);
 app.use("/api/auth", authRoutes);
-
+app.use(
+    "/api",
+    analyticsRoutes
+);
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
