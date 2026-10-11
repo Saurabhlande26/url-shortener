@@ -5,6 +5,7 @@ const {
 const {
     recordClick,
 } = require("../services/click.service");
+const { publishClickEvent } = require("../services/analytics.stream");
 
 async function redirectToOriginalUrl(req, res) {
     try {
@@ -13,7 +14,9 @@ async function redirectToOriginalUrl(req, res) {
         const url = await getOriginalUrl(shortCode);
 
         // Record analytics
-        await recordClick({
+        // recordClick before
+        // publishClickEvent this will run by side worker
+        await publishClickEvent({
             urlId: url.id,
             ipAddress: req.ip,
             userAgent: req.get("user-agent"),

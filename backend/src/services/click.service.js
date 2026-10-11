@@ -79,15 +79,48 @@ async function getUrlAnalytics(urlId, userId) {
             )
             .getCount();
 
+    const timeline = await clickRepository
+        .createQueryBuilder("click")
+        .select(
+            "DATE(click.created_at)",
+            "date"
+        )
+        .addSelect(
+            "COUNT(click.id)",
+            "clicks"
+        )
+        .where(
+            "click.url_id = :urlId",
+            { urlId }
+        )
+        .andWhere(
+            "click.created_at >= :sevenDaysAgo",
+            { sevenDaysAgo }
+        )
+        .groupBy(
+            "DATE(click.created_at)"
+        )
+        .orderBy(
+            "DATE(click.created_at)",
+            "ASC"
+        )
+        .getRawMany();
+
     return {
         url: {
             id: url.id,
             shortCode: url.shortCode,
             originalUrl: url.originalUrl,
         },
-        totalClicks,
-        todayClicks,
-        last7DaysClicks,
+        summary: {
+            totalClicks,
+            todayClicks,
+            last7DaysClicks,
+        },
+        timeline: timeline.map((item) => ({
+            date: item.date,
+            clicks: Number(item.clicks),
+        })),
     };
 }
 
