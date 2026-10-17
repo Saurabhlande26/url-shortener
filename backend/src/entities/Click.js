@@ -10,7 +10,12 @@ module.exports = new EntitySchema({
             primary: true,
             generated: "identity",
         },
-
+        eventId: {
+            name: "event_id",
+            type: "varchar",
+            length: 50,
+            nullable: true,
+        },
         ipAddress: {
             name: "ip_address",
             type: "varchar",

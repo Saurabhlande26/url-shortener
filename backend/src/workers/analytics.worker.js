@@ -32,7 +32,7 @@ async function ensureConsumerGroup() {
     }
 }
 
-async function processClickEvent(event) {
+async function processClickEvent(event, eventId) {
     const clickRepository =
         AppDataSource.getRepository("Click");
 
@@ -43,21 +43,66 @@ async function processClickEvent(event) {
         referer,
     } = event;
 
-    const click = clickRepository.create({
-        url: {
-            id: urlId,
-        },
-
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
-        referer: referer || null,
-    });
-
-    await clickRepository.save(click);
+    await clickRepository
+        .createQueryBuilder()
+        .insert()
+        .into("clicks")
+        .values({
+            url: {
+                id: Number(urlId),
+            },
+            eventId,
+            ipAddress: ipAddress || null,
+            userAgent: userAgent || null,
+            referer: referer || null,
+        })
+        .orIgnore(
+            '(event_id) WHERE event_id IS NOT NULL DO NOTHING'
+        )
+        .execute();
 
     console.log(
-        `Analytics saved for URL ${urlId}`
+        `Analytics event handled: ${eventId}`
     );
+}
+
+async function recoverPendingMessages() {
+    const result = await redisClient.xAutoClaim(
+        ANALYTICS_STREAM,
+        CONSUMER_GROUP,
+        CONSUMER_NAME,
+        30000,
+        "0-0",
+        {
+            COUNT: 10,
+        }
+    );
+
+    const messages = result.messages || [];
+
+    for (const message of messages) {
+        try {
+            await processClickEvent(
+                message.message,
+                message.id
+            );
+
+            await redisClient.xAck(
+                ANALYTICS_STREAM,
+                CONSUMER_GROUP,
+                message.id
+            );
+
+            console.log(
+                `Recovered and processed event ${message.id}`
+            );
+        } catch (error) {
+            console.error(
+                `Failed to recover ${message.id}:`,
+                error
+            );
+        }
+    }
 }
 
 async function startWorker() {
@@ -78,7 +123,7 @@ async function startWorker() {
     console.log(
         `Analytics worker started: ${CONSUMER_NAME}`
     );
-
+    await recoverPendingMessages();
     while (true) {
         try {
             const result = await redisClient.xReadGroup(
@@ -104,7 +149,8 @@ async function startWorker() {
                 for (const message of stream.messages) {
                     try {
                         await processClickEvent(
-                            message.message
+                            message.message,
+                            message.id
                         );
 
                         await redisClient.xAck(
