@@ -1,3 +1,6 @@
+***Note Whenever want to add container then run below cmd***
+**docker compose up -d**
+
 ***Redis cmd***
 **This is for delete Redis data using git bash**
 winpty docker exec -it url-shortener-redis redis-cli FLUSHALL

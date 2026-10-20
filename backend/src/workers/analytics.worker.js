@@ -44,22 +44,20 @@ async function processClickEvent(event, eventId) {
     } = event;
 
     await clickRepository
-        .createQueryBuilder()
-        .insert()
-        .into("clicks")
-        .values({
-            url: {
-                id: Number(urlId),
-            },
-            eventId,
-            ipAddress: ipAddress || null,
-            userAgent: userAgent || null,
-            referer: referer || null,
-        })
-        .orIgnore(
-            '(event_id) WHERE event_id IS NOT NULL DO NOTHING'
-        )
-        .execute();
+      .createQueryBuilder()
+      .insert()
+      .into("clicks")
+      .values({
+        url: {
+          id: Number(urlId),
+        },
+        eventId,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        referer: referer || null,
+      })
+      .orIgnore()
+      .execute();
 
     console.log(
         `Analytics event handled: ${eventId}`
@@ -106,81 +104,67 @@ async function recoverPendingMessages() {
 }
 
 async function startWorker() {
-    await AppDataSource.initialize();
-
-    console.log(
-        "PostgreSQL connected for analytics worker"
-    );
-
-    await redisClient.connect();
-
-    console.log(
-        "Redis connected for analytics worker"
-    );
-
-    await ensureConsumerGroup();
-
-    console.log(
-        `Analytics worker started: ${CONSUMER_NAME}`
-    );
-    await recoverPendingMessages();
-    while (true) {
-        try {
-            const result = await redisClient.xReadGroup(
-                CONSUMER_GROUP,
-                CONSUMER_NAME,
-                [
-                    {
-                        key: ANALYTICS_STREAM,
-                        id: ">",
-                    },
-                ],
-                {
-                    COUNT: 10,
-                    BLOCK: 5000,
-                }
-            );
-
-            if (!result) {
-                continue;
-            }
-
-            for (const stream of result) {
-                for (const message of stream.messages) {
-                    try {
-                        await processClickEvent(
-                            message.message,
-                            message.id
-                        );
-
-                        await redisClient.xAck(
-                            ANALYTICS_STREAM,
-                            CONSUMER_GROUP,
-                            message.id
-                        );
-
-                        console.log(
-                            `Processed event ${message.id}`
-                        );
-                    } catch (error) {
-                        console.error(
-                            `Failed to process ${message.id}:`,
-                            error
-                        );
-                    }
-                }
-            }
-        } catch (error) {
-            console.error(
-                "Analytics worker error:",
-                error
-            );
-
-            await new Promise((resolve) =>
-                setTimeout(resolve, 2000)
-            );
-        }
+  await AppDataSource.initialize();
+  console.log("PostgreSQL connected for analytics worker");
+  await redisClient.connect();
+  console.log("Redis connected for analytics worker");
+  await ensureConsumerGroup();
+  console.log(`Analytics worker started: ${CONSUMER_NAME}`);
+  // Recover pending messages when the worker starts.
+  await recoverPendingMessages();
+  // Run recovery every 30 seconds.
+  setInterval(async () => {
+    try {
+      await recoverPendingMessages();
+    } catch (error) {
+      console.error("Pending message recovery failed:", error);
     }
+  }, 30000);
+ 
+  while (true) {
+    try {
+      const result = await redisClient.xReadGroup(
+        CONSUMER_GROUP,
+        CONSUMER_NAME,
+        [
+          {
+            key: ANALYTICS_STREAM,
+            id: ">",
+          },
+        ],
+        {
+          COUNT: 10,
+          BLOCK: 5000,
+        },
+      );
+
+      if (!result) {
+        continue;
+      }
+
+      for (const stream of result) {
+        for (const message of stream.messages) {
+          try {
+            await processClickEvent(message.message, message.id);
+
+            await redisClient.xAck(
+              ANALYTICS_STREAM,
+              CONSUMER_GROUP,
+              message.id,
+            );
+
+            console.log(`Processed event ${message.id}`);
+          } catch (error) {
+            console.error(`Failed to process ${message.id}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Analytics worker error:", error);
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
 }
 
 startWorker().catch((error) => {
