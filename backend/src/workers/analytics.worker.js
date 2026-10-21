@@ -9,6 +9,7 @@ const CONSUMER_NAME = `worker-${process.pid}`;
 
 async function ensureConsumerGroup() {
   try {
+    //This function makes sure your Redis consumer group exists.
     await redisClient.xGroupCreate(ANALYTICS_STREAM, CONSUMER_GROUP, "0", {
       MKSTREAM: true,
     });
@@ -41,6 +42,7 @@ async function processClickEvent(event, eventId) {
 }
 
 async function recoverPendingMessages() {
+  // This will auto check pending messages
   const result = await redisClient.xAutoClaim(
     ANALYTICS_STREAM,
     CONSUMER_GROUP,
@@ -92,13 +94,17 @@ async function startWorker() {
         [{ key: ANALYTICS_STREAM, id: ">" }],
         { COUNT: 10, BLOCK: 5000 },
       );
-
+      // If no messages arrive during the blocking period, Redis can return no results, and the loop tries again.
+      // Important: The worker doesn't need publishClickEvent() to call it directly. It is already running and waiting for messages in Redis.
       if (!result) continue;
 
       for (const stream of result) {
         for (const message of stream.messages) {
           try {
+            // Insert into PostgreSQL
             await processClickEvent(message.message, message.id);
+            // After successful processing, xAck() acknowledges it.
+            // The worker uses XACK to remove the event from the pending list.
             await redisClient.xAck(
               ANALYTICS_STREAM,
               CONSUMER_GROUP,
