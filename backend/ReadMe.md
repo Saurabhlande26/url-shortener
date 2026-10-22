@@ -27,3 +27,4 @@ SELECT COUNT(*) FROM urls;
 
 ***For push to github***
 gh auth login
+gh auth logout
