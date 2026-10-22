@@ -22,3 +22,8 @@ TRUNCATE TABLE urls, users RESTART IDENTITY CASCADE;
 **Then verify:**
 SELECT COUNT(*) FROM users;
 SELECT COUNT(*) FROM urls;
+
+
+
+***For push to github***
+gh auth login
