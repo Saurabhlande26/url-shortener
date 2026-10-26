@@ -4,8 +4,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js",
-    "worker": "node src/workers/analytics.worker.js"
+    "worker": "node src/workers/analytics.worker.js",
+    "migration:show": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:show -d src/config/database.js",
+    "migration:run": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d src/config/database.js",
+    "start": "node src/app.js"
   },
   "keywords": [],
   "author": "",

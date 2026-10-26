@@ -12,14 +12,13 @@ const AppDataSource = new DataSource({
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-
     entities: [
         User,
         Url,
         Click,
     ],
-
-    synchronize: true,
+    migrations: ["src/migrations/*.js"],
+    synchronize: false,
 
     logging: false,
 });
