@@ -5,20 +5,22 @@ const MAX_REQUESTS = 100;
 
 async function rateLimiter(req, res, next) {
     try {
+        // Identify the user
         const identifier = req.user ? `user:${req.user.id}` : `ip:${req.ip}`;
         const key = `rate-limit:url-create:${identifier}`;
         const now = Date.now();
         const windowStart = now - WINDOW_SIZE;
-
+        // Remove expired requests
         await redisClient.zRemRangeByScore(key, 0, windowStart);
-        
+        // Count requests in the window
         const requestCount = await redisClient.zCard(key);
-
+        // Reject excess requests
         if (requestCount >= MAX_REQUESTS) {
             return res.status(429).json({ success: false, message: "Too many requests. Please try again later.", });
         }
-
+        // Record the new request
         await redisClient.zAdd(key, { score: now, value: `${now}-${Math.random()}`, });
+        // Set expiration
         await redisClient.pExpire(key, WINDOW_SIZE);
 
         next();
