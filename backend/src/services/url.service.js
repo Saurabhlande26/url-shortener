@@ -36,7 +36,6 @@ async function createShortUrl({ originalUrl, customAlias, userId }) {
     customAlias: customAlias || null,
     user: { id: userId },
   });
-console.log({ url });
   return await urlRepository.save(url);
 }
 
