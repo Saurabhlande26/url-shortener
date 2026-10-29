@@ -4,7 +4,9 @@ require("dotenv").config();
 const app = require("./app");
 const AppDataSource = require("./config/database");
 const redisClient = require("./config/redis");
+const validateEnv = require("./config/validateEnv");
 
+validateEnv();
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {

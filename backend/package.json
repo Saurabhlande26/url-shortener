@@ -6,8 +6,9 @@
     "dev": "nodemon src/server.js",
     "worker": "node src/workers/analytics.worker.js",
     "migration:show": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:show -d src/config/database.js",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --testPathIgnorePatterns=tests/integration",
     "test:integration": "dotenv -e .env.test -- jest --runInBand tests/integration",
+    "test:all": "dotenv -e .env.test -- jest --runInBand",
     "migration:run": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d src/config/database.js",
     "start": "node src/server.js"
   },
@@ -20,6 +21,7 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0",
     "redis": "^6.2.1",

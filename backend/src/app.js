@@ -1,4 +1,4 @@
-
+const helmet = require("helmet");
 const express = require("express");
 const cors = require("cors");
 
@@ -9,8 +9,18 @@ const redirectRoutes = require("./routes/redirect.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 
 const app = express();
+app.use(helmet());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || origin === "http://localhost:5173") {
+        return callback(null, true);
+      }
 
-app.use(cors());
+      return callback(null, false);
+    },
+  })
+);
 app.use(express.json());
 
 app.get("/health", async (req, res) => {

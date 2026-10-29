@@ -4,6 +4,9 @@ jest.mock("../src/services/auth.service", () => ({
   loginUser: jest.fn(),
 }));
 
+jest.mock("../src/middleware/authRateLimit.middleware", () =>
+  jest.fn((req, res, next) => next())
+);
 const request = require("supertest");
 const app = require("../src/app");
 const { registerUser, loginUser } = require("../src/services/auth.service");
