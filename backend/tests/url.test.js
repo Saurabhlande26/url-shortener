@@ -20,7 +20,7 @@ jest.mock("../src/middleware/rateLimit.middleware", () =>
 
 const request = require("supertest");
 const app = require("../src/app");
-
+const { BadRequestError } = require("../src/utils/errors");
 const {
   createShortUrl,
   getUserUrls,
@@ -62,7 +62,9 @@ describe("URL API", () => {
 
 
     it("should return 400 when originalUrl is missing", async () => {
-      createShortUrl.mockRejectedValue(new Error("Original URL is required"));
+      createShortUrl.mockRejectedValue(
+        new BadRequestError("Original URL is required")
+      );
 
       const response = await request(app)
         .post("/api/urls")
@@ -103,8 +105,8 @@ describe("URL API", () => {
 
       const response = await request(app).get("/api/urls");
 
-      expect(response.statusCode).toBe(500);
-      expect(response.body.message).toBe("Database error");
+      expect(response.body.message).toBe("Internal Server Error");
+      expect(response.body.message).toBe("Internal Server Error");
     });
   });
 

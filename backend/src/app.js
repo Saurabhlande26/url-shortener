@@ -1,7 +1,7 @@
 const helmet = require("helmet");
 const express = require("express");
 const cors = require("cors");
-
+const errorHandler = require("./middleware/error.middleware");
 const authRoutes = require("./routes/auth.routes");
 const redisClient = require("./config/redis");
 const urlRoutes = require("./routes/url.routes");
@@ -10,6 +10,7 @@ const analyticsRoutes = require("./routes/analytics.routes");
 
 const app = express();
 app.use(helmet());
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -37,5 +38,6 @@ app.use("/api/urls", urlRoutes);
 app.use("/", redirectRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api", analyticsRoutes);
+app.use(errorHandler);
 
 module.exports = app;

@@ -2,14 +2,19 @@ const AppDataSource = require("../config/database");
 const generateShortCode = require("../utils/generateCode");
 const isValidUrl = require("../utils/validateUrl");
 const { deleteCachedUrl } = require("./cache.service");
+const { BadRequestError } = require("../utils/errors");
 
 const urlRepository = AppDataSource.getRepository("Url");
 
 async function createShortUrl({ originalUrl, customAlias, userId }) {
-  if (!originalUrl) throw new Error("Original URL is required");
-  if (!isValidUrl(originalUrl)) throw new Error("Invalid URL");
-  if (!userId) throw new Error("User authentication required");
+  if (!originalUrl) throw new BadRequestError("Original URL is required");
+  if (!isValidUrl(originalUrl)) {
+    throw new BadRequestError("Invalid URL");
+  }
 
+  if (!userId) {
+    throw new UnauthorizedError("User authentication required");
+  }
   if (customAlias) {
     // ⭐ UPDATED
     const existingAlias = await urlRepository.findOne({
