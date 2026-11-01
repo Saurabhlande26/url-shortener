@@ -1,4 +1,3 @@
-
 const AppError = require("./AppError");
 
 class BadRequestError extends AppError {
@@ -19,8 +18,15 @@ class NotFoundError extends AppError {
     }
 }
 
+class ConflictError extends AppError {
+    constructor(message = "Resource already exists") {
+        super(message, 409);
+    }
+}
+
 module.exports = {
     BadRequestError,
     UnauthorizedError,
     NotFoundError,
+    ConflictError,
 };

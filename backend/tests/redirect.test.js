@@ -30,6 +30,23 @@ describe("GET /:shortCode", () => {
     expect(publishClickEvent).toHaveBeenCalledTimes(1);
   });
 
+  it("should redirect even when analytics publishing fails", async () => {
+    getOriginalUrl.mockResolvedValue({
+      id: "1",
+      originalUrl: "https://example.com",
+    });
+
+    publishClickEvent.mockRejectedValue(
+      new Error("Redis connection failed")
+    );
+
+    const response = await request(app).get("/test123");
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers.location).toBe("https://example.com");
+    expect(publishClickEvent).toHaveBeenCalledTimes(1);
+  });
+
   it("should return 404 when the short URL does not exist", async () => {
     const error = new Error("Short URL not found");
     error.statusCode = 404;

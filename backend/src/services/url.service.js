@@ -2,7 +2,10 @@ const AppDataSource = require("../config/database");
 const generateShortCode = require("../utils/generateCode");
 const isValidUrl = require("../utils/validateUrl");
 const { deleteCachedUrl } = require("./cache.service");
-const { BadRequestError } = require("../utils/errors");
+const {
+  BadRequestError,
+  UnauthorizedError,
+} = require("../utils/errors");
 
 const urlRepository = AppDataSource.getRepository("Url");
 

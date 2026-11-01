@@ -10,7 +10,10 @@ jest.mock("../src/middleware/authRateLimit.middleware", () =>
 const request = require("supertest");
 const app = require("../src/app");
 const { registerUser, loginUser } = require("../src/services/auth.service");
-
+const {
+  ConflictError,
+  UnauthorizedError,
+} = require("../src/utils/errors");
 describe("Authentication API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,7 +40,9 @@ describe("Authentication API", () => {
     });
 
     it("should return 400 when registration fails", async () => {
-      registerUser.mockRejectedValue(new Error("Email already exists"));
+      registerUser.mockRejectedValue(
+        new ConflictError("User already exists")
+      );
 
       const response = await request(app)
         .post("/api/auth/register")
@@ -46,9 +51,9 @@ describe("Authentication API", () => {
           password: "Password123!",
         });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(409);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Email already exists");
+      expect(response.body.message).toBe("User already exists");
     });
   });
 
@@ -76,7 +81,9 @@ describe("Authentication API", () => {
     });
 
     it("should return 401 when login fails", async () => {
-      loginUser.mockRejectedValue(new Error("Invalid credentials"));
+      loginUser.mockRejectedValue(
+        new UnauthorizedError("Invalid email or password")
+      );
 
       const response = await request(app)
         .post("/api/auth/login")
@@ -87,7 +94,7 @@ describe("Authentication API", () => {
 
       expect(response.statusCode).toBe(401);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe("Invalid credentials");
+      expect(response.body.message).toBe("Invalid email or password");
     });
   });
 });

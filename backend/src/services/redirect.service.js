@@ -1,7 +1,8 @@
 const AppDataSource = require("../config/database");
 const { getCachedUrl, cacheUrl } = require("./cache.service");
-
+const { NotFoundError } = require("../utils/errors");
 const urlRepository = AppDataSource.getRepository("Url");
+const AppError = require("../utils/AppError");
 
 async function getOriginalUrl(shortCode) {
   // 1. Redis
@@ -19,9 +20,7 @@ async function getOriginalUrl(shortCode) {
     });
 
     if (!dbUrl) {
-      const error = new Error("Short URL not found");
-      error.statusCode = 404;
-      throw error;
+      throw new NotFoundError("Short URL not found");
     }
 
     url = {
@@ -39,16 +38,12 @@ async function getOriginalUrl(shortCode) {
 
   // 3. Check active
   if (!url.isActive) {
-    const error = new Error("Short URL is disabled");
-    error.statusCode = 410;
-    throw error;
+    throw new AppError("Short URL is disabled", 410);
   }
 
   // 4. Check expiration
   if (url.expiresAt && new Date(url.expiresAt) <= new Date()) {
-    const error = new Error("This short URL has expired");
-    error.statusCode = 410;
-    throw error;
+    throw new AppError("This short URL has expired", 410);
   }
 
   return url;
