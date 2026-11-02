@@ -18,30 +18,6 @@ async function startServer() {
     console.log("PostgreSQL connected successfully");
     console.log("PostgreSQL Pool Stats:", getPoolStats());
 
-    const queryPromises = Array.from({ length: 15 }, () =>
-      AppDataSource.query("SELECT pg_sleep(5)")
-    );
-
-    setTimeout(() => {
-      console.log("Pool Stats During Load:", getPoolStats());
-    }, 1000);
-
-    const results = await Promise.allSettled(queryPromises);
-
-    const failedQueries = results.filter(
-      (result) => result.status === "rejected"
-    );
-
-    failedQueries.forEach((result, index) => {
-      console.log(`Failed Query ${index + 1}:`, {
-        message: result.reason.message,
-        code: result.reason.code,
-      });
-    });
-
-    console.log("Successful queries:", results.filter(r => r.status === "fulfilled").length);
-    console.log("Failed queries:", results.filter(r => r.status === "rejected").length);
-    console.log("Pool Stats After Load:", getPoolStats());
     await redisClient.connect();
     console.log("Redis connected successfully");
 

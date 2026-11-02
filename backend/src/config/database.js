@@ -3,7 +3,7 @@ const { DataSource } = require("typeorm");
 const User = require("../entities/User");
 const Url = require("../entities/Url");
 const Click = require("../entities/Click");
-
+const DB_POOL_MAX = 10;
 const AppDataSource = new DataSource({
     type: "postgres",
 
@@ -23,11 +23,10 @@ const AppDataSource = new DataSource({
     logging: false,
     extra: {
         statement_timeout: 15000,
-
-        max: 10,                      // Maximum connections
-        min: 2,                       // Minimum connections
-        idleTimeoutMillis: 30000,     // Close idle connections after 30 sec
-        connectionTimeoutMillis: 15000 // Wait max 5 sec for a connection
+        max: DB_POOL_MAX,
+        min: 2,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 15000,
     },
 });
 
@@ -47,3 +46,4 @@ function getPoolStats() {
 
 module.exports = AppDataSource;
 module.exports.getPoolStats = getPoolStats;
+module.exports.DB_POOL_MAX = DB_POOL_MAX;

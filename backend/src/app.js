@@ -7,6 +7,7 @@ const redisClient = require("./config/redis");
 const urlRoutes = require("./routes/url.routes");
 const redirectRoutes = require("./routes/redirect.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
+const healthRoutes = require("./routes/health.routes");
 
 const app = express();
 app.use(helmet());
@@ -24,15 +25,7 @@ app.use(
 );
 app.use(express.json());
 
-app.get("/health", async (req, res) => {
-  const redisStatus = redisClient.isReady ? "connected" : "disconnected";
-
-  res.json({
-    success: true,
-    message: "URL Shortener API is running",
-    redis: redisStatus,
-  });
-});
+app.use("/health", healthRoutes);
 
 app.use("/api/urls", urlRoutes);
 app.use("/", redirectRoutes);
